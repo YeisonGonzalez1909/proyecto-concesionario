@@ -36,14 +36,14 @@ Endpoints y ejemplos de uso (Postman)
 Headers: `Content-Type: application/json`
 
 1) Crear categoría
-- POST /categorias
+- POST /api/categorias
 Body:
 {
   "nombre": "SUV"
 }
 
 2) Crear producto (sin categoría)
-- POST /productos
+- POST /api/productos
 Body:
 {
   "marca": "Toyota",
@@ -54,7 +54,7 @@ Body:
 }
 
 3) Crear producto con categoría (referenciando por id)
-- POST /productos
+- POST /api/productos
 Body:
 {
   "marca": "Honda",
@@ -66,7 +66,7 @@ Body:
 }
 
 4) Crear detalle para producto
-- POST /detalles
+- POST /api/detalles
 Body:
 {
   "nombre": "Kit de audio premium",

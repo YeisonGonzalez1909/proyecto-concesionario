@@ -1,10 +1,7 @@
 package com.concesionario.controllers;
 
 import com.concesionario.models.Producto;
-import com.concesionario.models.Categoria;
-import com.concesionario.repositories.ProductoRepository;
-import com.concesionario.repositories.CategoriaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.concesionario.services.ProductoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,74 +9,56 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/productos")
+@RequestMapping("/api/productos")
 public class ProductoController {
 
-	@Autowired
-	private ProductoRepository productoRepository;
+	private final ProductoService productoService;
 
-	@Autowired
-	private CategoriaRepository categoriaRepository;
+	public ProductoController(ProductoService productoService) {
+		this.productoService = productoService;
+	}
 
 	@GetMapping
 	public List<Producto> getAllProductos() {
-		return productoRepository.findAll();
+		return productoService.findAll();
 	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<Producto> getProductoById(@PathVariable Integer id) {
-		Optional<Producto> p = productoRepository.findById(id);
+		Optional<Producto> p = productoService.findById(id);
 		return p.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
 	@PostMapping
-	public ResponseEntity<?> createProducto(@RequestBody Producto producto) {
-		// If a category is provided, verify it exists and attach
-		if (producto.getCategoria() != null && producto.getCategoria().getId() != null) {
-			Optional<Categoria> cat = categoriaRepository.findById(producto.getCategoria().getId());
-			if (cat.isEmpty()) {
-				return ResponseEntity.badRequest().body("Categoria no encontrada");
-			}
-			producto.setCategoria(cat.get());
+	public ResponseEntity<Object> createProducto(@RequestBody Producto producto) {
+		try {
+			Producto created = productoService.create(producto);
+			return ResponseEntity.ok(created);
+		} catch (IllegalArgumentException ex) {
+			return ResponseEntity.badRequest().body(ex.getMessage());
 		}
-		Producto created = productoRepository.save(producto);
-		return ResponseEntity.ok(created);
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<?> updateProducto(@PathVariable Integer id, @RequestBody Producto updated) {
-		Optional<Producto> existing = productoRepository.findById(id);
-		if (existing.isEmpty()) {
-			return ResponseEntity.notFound().build();
-		}
-		Producto p = existing.get();
-		// update fields
-		p.setMarca(updated.getMarca());
-		p.setModelo(updated.getModelo());
-		p.setAnio(updated.getAnio());
-		p.setPrecio(updated.getPrecio());
-		p.setStock(updated.getStock());
-		if (updated.getCategoria() != null && updated.getCategoria().getId() != null) {
-			Optional<Categoria> cat = categoriaRepository.findById(updated.getCategoria().getId());
-			if (cat.isEmpty()) {
-				return ResponseEntity.badRequest().body("Categoria no encontrada");
+	public ResponseEntity<Object> updateProducto(@PathVariable Integer id, @RequestBody Producto updated) {
+		try {
+			Producto saved = productoService.update(id, updated);
+			return ResponseEntity.ok(saved);
+		} catch (IllegalArgumentException ex) {
+			if ("Producto no encontrado".equals(ex.getMessage())) {
+				return ResponseEntity.notFound().build();
 			}
-			p.setCategoria(cat.get());
-		} else {
-			p.setCategoria(null);
+			return ResponseEntity.badRequest().body(ex.getMessage());
 		}
-		Producto saved = productoRepository.save(p);
-		return ResponseEntity.ok(saved);
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<?> deleteProducto(@PathVariable Integer id) {
-		Optional<Producto> existing = productoRepository.findById(id);
-		if (existing.isEmpty()) {
+	public ResponseEntity<Object> deleteProducto(@PathVariable Integer id) {
+		try {
+			productoService.delete(id);
+			return ResponseEntity.noContent().build();
+		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.notFound().build();
 		}
-		productoRepository.deleteById(id);
-		return ResponseEntity.noContent().build();
 	}
-
 }
